@@ -1,0 +1,404 @@
+---
+title: "Final Project 4 R Markdown - AH Provisional Cancer Death Counts by Month and Year 2020-2021"
+author: "Ramya Rajendran"
+date: "`r format(Sys.Date(), '%d %b %Y %A')`"
+output:
+  html_document:
+    toc: true
+    toc_depth: 4
+    number_sections: true
+    theme: united
+    fig_caption: true
+  pdf_document:
+    toc: true
+    toc_depth: '4'
+  word_document:
+    toc: true
+    toc_depth: '4'
+description: "Final Project 4 R Markdown - AH Provisional Cancer Death Counts by Month and Year 2020-2021"
+always_allow_html: true
+# ------------------------------------------------------------------------------
+# PARAMETERS (used for conditional data loading)
+# This value can be overridden via config.yml when rendering the document:
+#
+# Example config.yml:
+# params:
+#   use_web_data: FALSE
+#
+# Default below: FALSE (i.e., download data from CDC site)
+# ------------------------------------------------------------------------------
+params:
+  use_web_data: FALSE
+---
+
+
+```{r setup, echo=FALSE, message=FALSE, warning=FALSE}
+# This chunk sets global options for the R Markdown document.
+# `echo = FALSE` ensures that the code is not shown in the final output.
+# `message = FALSE` prevents any messages generated during code execution from being displayed.
+# `warning = FALSE` hides any warnings from the final output.
+knitr::opts_chunk$set(echo = FALSE,
+                      warning = FALSE,
+                      message = FALSE)
+```
+
+# **Introduction**
+
+## **Overview**
+
+Cancer remains a leading cause of death in the United States, with significant variations across demographic groups and cancer types. This report analyzes **AH Provisional Cancer Death Counts** from **2020 to 2021**, providing insights into **temporal trends**, **demographic disparities**, and **cancer-specific mortality patterns**.
+
+## **Dataset Description**
+
+The dataset, **"AH Provisional Cancer Death Counts by Month and Year, 2020-2021"**, is sourced from the **Centers for Disease Control and Prevention (CDC)**. It consists of **2,816 records and 29 variables**, offering a comprehensive overview of **monthly cancer-related deaths** in the United States.
+
+### **Key Features**
+
+- **Temporal Data** – Year and month of recorded deaths.  
+- **Demographic Breakdown** – Includes **sex, age group, race, and ethnicity**.  
+- **Cancer-Specific Mortality** – Death counts for major cancer types, including: **Malignant neoplasms** of the stomach, colon, breast, and prostate.  
+   
+### **Analysis Objectives**
+
+The primary objectives of this analysis are:
+
+- **Examine Temporal Trends**:  
+  To analyze how cancer mortality rates evolved over the 2020-2021 period, identifying notable changes, trends, or seasonal variations in mortality.
+
+- **Identify Demographic Disparities**:  
+  To explore how cancer death rates differ across demographic groups, including **sex**, **age**, **race**, and **ethnicity**, and uncover any disparities in mortality rates.
+
+- **Assess Cancer-Specific Mortality Patterns**:  
+  To examine death counts for specific cancer types, such as **stomach**, **colon**, **breast**, and **prostate**, and identify which cancers showed the most significant changes in mortality rates during the study period.
+  
+### **Significance of the Analysis**
+
+This dataset provides a **critical foundation for understanding cancer mortality trends**, aiding public health researchers and policymakers in:
+
+- Identifying **demographic disparities** in cancer-related deaths.
+- Examining **seasonal or temporal variations** in mortality rates.
+- Supporting **cancer prevention and intervention strategies**.
+ 
+
+**Dataset Source:**  
+[CDC - AH Provisional Cancer Death Counts (2020-2021)](https://data.cdc.gov/NCHS/AH-Provisional-Cancer-Death-Counts-by-Month-and-Ye/2na8-fe6s/about_data)
+
+### **Load Libraries**
+
+In this section, we load the necessary libraries to handle the data and create visualizations:
+
+1. **`tidyverse`**: A set of tools for data manipulation and plotting.
+2. **`lubridate`**: Makes working with dates easier.
+3. **`kableExtra`**: Helps enhance the appearance of tables.
+4. **`scales`**: Formats numbers and labels in plots for better readability.
+
+These libraries help us clean, analyze, and visualize the data effectively.
+    
+```{r load_libraries}
+library(tidyverse)  # Load the tidyverse for data manipulation and plotting
+library(lubridate)  # Load lubridate for date handling
+library(kableExtra) # Load kableExtra for enhanced tables
+library(scales)     # Load the scales package for formatting numbers
+library(here)       # For better file path management
+library(yaml)       # Load the yaml package for reading and parsing YAML files
+```
+
+
+# **Data Overview**
+
+## **Load and Clean Data**
+
+This section loads the cancer death dataset from the CDC's data portal using the `read.csv()` function. The first few rows of the data are displayed using `head()` and formatted with `kable` for better readability.
+
+The data is then filtered to remove rows with missing values in the "year" and "month" columns, ensuring that only complete records are used for analysis.
+
+```{r load_clean_data, message = TRUE}
+
+# Declare project root
+here::i_am("analysis/final_project_analysis.Rmd")
+
+# Set a default value
+use_web_data_flag <- FALSE
+
+# Priority 1: config.yml (external override)
+if (file.exists(here("config.yml"))) {
+  config <- yaml::read_yaml(here("config.yml"))
+  if (!is.null(config$params$use_web_data)) {
+    use_web_data_flag <- config$params$use_web_data
+    message("[INFO] use_web_data loaded from config.yml: ",
+            use_web_data_flag)
+  }
+} else if (exists("params") && !is.null(params$use_web_data)) {
+  # Priority 2: params defined in Rmd YAML
+  use_web_data_flag <- params$use_web_data
+  message("[INFO] use_web_data loaded from Rmd params: ",
+          use_web_data_flag)
+} else {
+  # Priority 3: fallback default
+  message("[INFO] use_web_data not defined. Using default: FALSE")
+}
+
+# Define data sources
+data_url <- "https://data.cdc.gov/resource/2na8-fe6s.csv?$limit=3000"
+local_file <- here("data",
+                   "AH_Provisional_Cancer_Death_Counts_by_Month_and_Year_2020-2021.csv")
+
+if (use_web_data_flag) {
+  message("[INFO] Fetching data from CDC...")
+  data <- read_csv(data_url)
+} else {
+  message("[INFO] Loading data from local file...")
+  data <- read_csv(local_file)
+}
+
+# Display the first few rows of the dataset as a formatted table using kable and kable_styling
+head(data) %>%
+  kable() %>%              # Convert to a markdown table
+  kable_styling()          # Apply additional styling for better presentation
+# Count and display the number of rows remaining before filtering
+nrow(data)
+data <- data %>%
+  filter(!is.na(year) & !is.na(month))
+```
+
+## **Summary Statistics**
+
+This section calculates the **summary statistics** for the dataset, which provides an overview of the basic statistical measures for each variable (e.g., minimum, median, mean, and maximum). The `summary(data)` function is used to generate these statistics for all columns in the dataset.
+
+After obtaining the summary statistics, the results are converted into a **markdown table** using the `kable()` function, which formats the output for better readability.
+
+To enhance the presentation, the `kable_styling()` function is applied. This function improves the visual appearance of the table by adding styling options, such as stripping alternating row colors, making the table more visually appealing and easier to interpret.
+
+```{r summary_statistics}
+summary(data) %>%
+  kable() %>%             # Convert to a markdown table
+  kable_styling()         # Apply additional styling for better presentation
+```
+
+# **Exploratory Data Analysis**
+
+## **Summary of Cancer Deaths by Cancer Type**
+
+The table below provides a **comprehensive overview** of total cancer-related deaths for different cancer types recorded in the dataset. It specifically focuses on cancer types that contain the terms **"malignant"** or **"unspecified"**, ensuring that the analysis captures the most relevant data on cancer mortality.  
+
+Each row represents a **specific type of cancer**, while the corresponding column displays the **total number of deaths** recorded over the analyzed period. The table is structured to highlight the **most fatal cancer types first**, with the highest mortality figures appearing at the top.  
+
+```{r summary_table}
+data %>%
+  select(contains("malignant") |
+           contains("unspecified")) %>%                           # Select columns containing "malignant" or "unspecified"
+  summarise_all(sum) %>%                                                                # Sum deaths for each cancer type
+  pivot_longer(everything(), names_to = "Cancer_Type", values_to = "Total_Deaths") %>%  # Reshape data
+  arrange(desc(Total_Deaths)) %>%                                                       # Sort by total deaths in descending order
+  kable(
+    caption = "**Summary of Cancer Deaths by Cancer Type**",
+    col.names = c("Cancer Type", "Total Deaths"),
+    align = "c"  # Center-align text within columns
+  ) %>%
+  kable_styling(
+    bootstrap_options = c("striped", "hover", "condensed"),
+    full_width = FALSE,
+    position = "center",
+    font_size = 14
+  ) %>%                                       # Apply styling to enhance table's appearance
+  row_spec(
+    0,
+    bold = TRUE,
+    color = "white",
+    background = "#2C3E50"
+  ) %>%   # Highlight header row with bold text and custom background
+  column_spec(1, width = "20em") %>%                                      # Set custom column width for the cancer types
+  column_spec(2, width = "10em", background = "#F1C40F")                  # Set custom background for the "Total Deaths" column
+```
+
+## **Monthly Trends**
+
+This analysis explores the monthly trends in total cancer deaths for the years 2020 and 2021. It aggregates the cancer death counts by year and month, then visualizes these trends through a line graph. The graph differentiates the years using distinct colors and labels months with their abbreviations. By examining the data, the visualization highlights potential seasonal fluctuations and changes in cancer mortality over the two-year span.
+
+```{r monthly_trends}
+# Select relevant columns containing cancer death data, year, and month
+data %>%
+  select(year, month, contains("malignant"), contains("unspecified")) %>%
+  
+  # Group data by year and month
+  group_by(year, month) %>%
+  
+  # Summarize by summing all numeric columns while ignoring missing values
+  summarise(across(where(is.numeric), sum, na.rm = TRUE), .groups = "drop") %>%
+  
+  # Create a new column 'Total_Deaths' by summing the total deaths across all cancer types
+  mutate(Total_Deaths = rowSums(across(-c(year, month)))) %>%
+  
+  # Plot the monthly trends of total cancer deaths by year
+  ggplot(aes(x = month, y = Total_Deaths, color = factor(year))) +
+  
+  # Add line plot for total cancer deaths with a line thickness of 1
+  geom_line(size = 1) +
+  
+  # Add labels and title
+  labs(
+    title = "Monthly Trends in Total Cancer Deaths (2020-2021)",
+    x = "Month",
+    y = "Total Deaths",
+    color = "Year"
+  ) +
+  
+  # Customize x-axis to display month abbreviations
+  scale_x_continuous(breaks = 1:12, labels = month.abb) +
+  
+  # Apply a minimal theme for a clean and simple plot design
+  theme_minimal()
+```
+
+## **Total Cancer Deaths by Year**
+
+This section visualizes the trend of total cancer deaths over time.  Yearly totals were calculated by summing deaths from different cancer types (malignant and unspecified).  Years are treated as distinct categories for clear presentation in a bar chart, where each bar represents a year and its height corresponds to the total cancer deaths for that year. Distinct colors for each bar facilitate easy comparison of death counts across years.
+
+```{r total_deaths_by_year}
+data %>%
+  select(year, contains("malignant"), contains("unspecified")) %>%
+  group_by(year) %>%
+  summarise(across(where(is.numeric), sum, na.rm = TRUE), .groups = "drop") %>%
+  mutate(Total_Deaths = rowSums(across(-c(year)))) %>%
+  
+  # Convert year to a factor *before* plotting
+  mutate(year = as.factor(year)) %>%
+  
+  ggplot(aes(x = year, y = Total_Deaths, fill = year)) + # Fill by factor year for distinct colors
+  geom_col() +
+  labs(title = "Total Cancer Deaths by Year", x = "Year", y = "Total Deaths") +
+  theme_minimal() +
+  
+  # Optional: Adjust fill colors if needed
+  scale_fill_brewer(palette = "Set1") # Example using RColorBrewer
+```
+
+## **Deaths by Demographic Group sex and race/ethnicity **
+
+This analysis explores total cancer deaths by sex and race/ethnicity. It begins by selecting relevant columns related to cancer mortality, sex, and racial/ethnic groups. The data is then grouped by these demographic categories, with total deaths calculated for each group. A new column, Total_Deaths, is generated by summing all deaths from malignant and unspecified cancer types, providing a comprehensive view of cancer mortality disparities across different populations.
+
+```{r deaths_by_demographic}
+data %>%
+  select(sex,
+         race_and_hispanic_origin,
+         contains("malignant"),
+         contains("unspecified")) %>%  # Select relevant columns
+  group_by(sex, race_and_hispanic_origin) %>%  # Group by sex and race/ethnicity only
+  summarise(across(where(is.numeric), sum, na.rm = TRUE), .groups = "drop") %>%  # Sum the cancer death counts by demographic group
+  mutate(Total_Deaths = rowSums(select(
+    ., starts_with("malignant"), starts_with("unspecified")
+  ), na.rm = TRUE)) %>%  # Compute total deaths by summing all malignant and unspecified cancer types
+  ggplot(aes(x = sex, y = Total_Deaths, fill = race_and_hispanic_origin)) +  # Color by race and ethnicity
+  geom_bar(stat = "identity", position = "dodge") +  # Use bar plot to visualize total deaths by demographic group
+  scale_y_continuous(labels = comma) +  # Format y-axis to display numbers in standard notation
+  labs(title = "Total Cancer Deaths by Demographic Group (Sex and Race/Ethnicity)",
+       x = "Sex",
+       y = "Total Deaths",
+       fill = "Race/Ethnicity") +
+  theme_minimal()
+```
+
+## **Top 5 Cancer Types by Deaths**
+
+This analysis identifies and visualizes the top 5 cancer types by total death counts. The dataset is filtered to include only columns related to malignant and unspecified cancer deaths. It then aggregates the total death counts by cancer type, reshapes the data into a long format, and ranks the types based on the highest death toll. The final plot displays these top 5 cancer types as horizontal bars, with the y-axis showing the cancer types and the x-axis representing the total number of deaths.
+
+```{r top_5_cancer_types}
+colnames(data) <- make.names(colnames(data))
+data %>%
+  select(contains("malignant") |
+           contains("unspecified")) %>%                           # Select columns containing "malignant" or "unspecified"
+  summarise_all(sum) %>%
+  pivot_longer(everything(), names_to = "Cancer_Type", values_to = "Total_Deaths") %>%
+  arrange(desc(Total_Deaths)) %>%
+  head(5) %>%
+  ggplot(aes(
+    x = reorder(Cancer_Type, Total_Deaths),
+    y = Total_Deaths,
+    fill = Cancer_Type
+  )) +
+  geom_col() +
+  coord_flip() +
+  scale_y_continuous(labels = comma) +  # Format y-axis numbers in standard notation
+  labs(title = "Top 5 Cancer Types by Deaths", x = "Cancer Type", y = "Total Deaths") +
+  theme_minimal()
+```
+
+# **Executive Summary**
+
+## **Purpose and Scope of the Report**
+
+This report analyzes the **AH Provisional Cancer Death Counts (2020-2021)** dataset, sourced from the **Centers for Disease Control and Prevention (CDC)**, to explore cancer-related mortality trends in the United States. It provides insights into **temporal fluctuations**, **demographic disparities**, and **cancer-specific mortality patterns** over a two-year period. This analysis aims to assist in the identification of key trends, inform public health strategies, and highlight areas where interventions may be needed.
+
+### **Key Research Questions:**
+1. How have cancer death rates evolved over time (monthly and yearly) during 2020 and 2021?
+2. What are the demographic disparities in cancer mortality across sex, age, race, and ethnicity?
+3. Which cancer types contributed the most to total deaths, and how did these trends change over the two-year period?
+
+## **Dataset Overview**
+
+The dataset consists of **2,816 records and 29 variables**. It provides monthly counts of cancer deaths across several cancer types, with detailed demographic breakdowns (including **sex**, **age group**, **race/ethnicity**) and cancer-specific mortality data. The analysis focuses on **malignant** and **unspecified** cancer types, which represent the majority of cancer-related deaths.
+
+Key dataset features:
+- **Temporal Data**: Month and year of recorded deaths.
+- **Demographic Breakdown**: Sex, age group, race/ethnicity, and other sociodemographic variables.
+- **Cancer Types**: Death counts for various cancers such as stomach, colon, breast, and prostate cancers.
+
+## **Key Findings**
+
+### 1. **Trends in Cancer Mortality (2020-2021)**
+
+The analysis of **monthly cancer death counts** reveals interesting seasonal patterns, with noticeable fluctuations in certain months. A year-over-year comparison shows that cancer deaths fluctuated in both directions, reflecting broader trends and potential seasonal variations. 
+
+- **Monthly Trends**: The visualization highlights months with significant peaks in cancer deaths, potentially tied to factors such as seasonal health impacts or external influences, such as the COVID-19 pandemic.
+- **Yearly Comparison**: The **total cancer deaths** by year show slight variations, offering a high-level view of how overall cancer mortality changed between 2020 and 2021.
+
+### 2. **Demographic Disparities in Cancer Mortality**
+
+Significant disparities exist across different demographic groups. The analysis reveals:
+- **Gender Disparities**: Differences in cancer mortality rates between men and women.
+- **Racial and Ethnic Disparities**: Certain racial and ethnic groups face disproportionately higher cancer death rates.
+- A bar chart analysis of cancer deaths by sex and race/ethnicity emphasizes these disparities, underscoring the need for tailored public health strategies and equitable healthcare access.
+
+### 3. **Cancer-Specific Mortality Patterns**
+
+The analysis identifies the **top 5 cancer types** contributing to the highest death tolls, with a focus on malignant neoplasms of the stomach, colon, breast, and prostate. These cancer types show the greatest impact on overall mortality. 
+
+- The identification of **high-mortality cancers** allows for more focused research and resource allocation in prevention and treatment efforts.
+
+### 4. **Yearly Cancer Deaths Comparison**
+
+A bar plot comparing cancer deaths by year shows that **total cancer deaths** fluctuated between 2020 and 2021. The data suggests a potential shift in the cancer mortality landscape during the two-year period, highlighting the need to assess both year-on-year changes and long-term trends.
+
+## **Conclusion and Implications**
+
+The findings from this analysis offer critical insights into **temporal trends**, **demographic disparities**, and **cancer-specific mortality patterns** that can influence public health policy and healthcare practices. Specifically:
+- The **monthly trends** suggest potential seasonal or external influences on cancer mortality.
+- **Demographic disparities** emphasize the need for targeted interventions and healthcare access improvements, especially for underrepresented groups.
+- The identification of the **top cancer types** by death toll informs both prevention strategies and resource allocation for cancer research.
+
+This report serves as a valuable resource for public health officials, policymakers, and researchers working to address cancer-related mortality in the U.S. and provides a foundation for further investigation into the factors influencing cancer death rates. The findings underscore the importance of continued efforts to reduce cancer mortality, address healthcare disparities, and improve early detection and prevention strategies.
+
+# **Appendices**
+
+## **Technical Notes**
+
+This section provides the technical methodology behind the analysis presented in this report.
+
+### **Data Loading and Cleaning**
+- The dataset was imported from the CDC's data portal using `read.csv()`. Data integrity was ensured by filtering out rows with missing values in critical columns such as `year` and `month` using `na.omit()` and custom filtering functions.
+- Data wrangling was carried out using the `tidyverse` package, with the `lubridate` package applied for efficient handling of date-time objects and extraction of temporal features.
+
+### **Data Summarization**
+- Descriptive statistics were computed using `summary()` to provide essential metrics (e.g., mean, median, min, max) for each variable.
+- Aggregation of cancer deaths by type, demographic group, and temporal intervals (e.g., year, month) was performed utilizing `dplyr`'s `summarise()` and `group_by()` functions to facilitate group-level analysis.
+
+### **Visualization**
+- **Monthly Trends**: A time-series plot was generated using `ggplot2`, with `geom_line()` to display cancer death trends over time, with color differentiation by year.
+- **Total Deaths by Year**: A bar chart created with `geom_bar()` illustrated the total cancer deaths in 2020 versus 2021, focusing on overall yearly comparisons.
+- **Demographic Analysis**: A bar chart employing `geom_bar()` with `position_dodge()` visualized cancer deaths by sex and race/ethnicity to reveal disparities across demographic categories.
+
+### **Statistical Considerations**
+- The analysis assumed the dataset was complete for all cancer types, demographic categories, and temporal periods. Missing data points were excluded to maintain the integrity of the analysis.
+- While no formal inferential statistical tests (e.g., t-tests or ANOVA) were conducted, the use of aggregated data and visual exploration allows for high-level trend analysis. Future iterations could involve statistical modeling to assess significance and trends further.
+
+For further details or clarifications on the methodology, please refer to the associated code chunks in the document.

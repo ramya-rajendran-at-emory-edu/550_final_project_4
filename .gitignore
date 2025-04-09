@@ -1,0 +1,40 @@
+# R-related
+.Rhistory
+.RData
+.Rproj.user/
+.Ruserdata
+
+# R Markdown output
+*.utf8.md
+*.knit.md
+*.html
+*.pdf
+*.docx
+*.log
+*.aux
+*.out
+cache/
+*_cache/
+*_files/
+
+# Plots and output
+*.png
+*.jpg
+*.jpeg
+*.svg
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Build files
+*.o
+*.so
+*.dll
+
+# Optional: Emacs/Vim
+*~
+*.swp

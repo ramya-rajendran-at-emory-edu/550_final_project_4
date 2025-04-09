@@ -1,0 +1,5 @@
+# Configuration file for final_project_4
+# This controls runtime parameters used during rendering.
+
+params:
+  use_web_data: FALSE  # If true, fetches data from the CDC website. If false, loads local CSV file from the 'data/' folder. 
