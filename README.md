@@ -8,7 +8,7 @@ This project analyzes U.S. provisional cancer death data from 2020 to 2021, sour
 
 ## 📁 Project Structure
 ```
-final_project_4/
+550_final_project_4/
 ├── analysis/                          # R Markdown source and rendered HTML report
 │   ├── final_project_analysis.Rmd
 │   └── final_project_analysis.html
@@ -29,6 +29,9 @@ final_project_4/
 │   ├── 02_create_figure.R             # 📊 Generates required figures
 │   └── 03_render_report.R             # 📑 Renders final HTML report
 │
+├── renv/                              # renv project-specific library and metadata
+├── renv.lock                          # Snapshot of all R packages and versions
+├── .Rprofile                          # Activates renv when project is loaded
 ├── .gitignore                         # Clean version control by ignoring unnecessary files
 ├── LICENSE                            # MIT-based license for reuse and attribution
 ├── Makefile                           # Optional automation for rendering workflow
@@ -37,6 +40,13 @@ final_project_4/
 ├── config.yml                         # Configurable parameters (e.g., use_web_data)
 ├── data_dictionary.md                 # CDC variable documentation (Markdown)
 └── data_dictionary.html               # CDC variable documentation (HTML, rendered)
+
+
+                  
+             
+```
+
+
 ```
 
 ---
@@ -162,7 +172,24 @@ Other available options:
 | `make figures`  | Generate only the figures                   |
 | `make clean`    | Remove all `.html` and `.png` outputs       |
 
-Make sure you're in the project root directory (`final_project_4/`) before running `make`.
+
+### 🔹 Option 3: Restore the R Package Environment (Recommended)
+
+This project uses the [`renv`](https://rstudio.github.io/renv/) package for reproducibility.
+
+To restore the environment:
+
+```bash
+make install
+```
+
+Or run manually in R:
+
+```r
+renv::restore()
+```
+
+Make sure you're in the project root directory (`550_final_project_4/`) before running `make`.
 
 ---
 

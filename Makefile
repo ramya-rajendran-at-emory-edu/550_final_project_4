@@ -37,5 +37,12 @@ figures:
 # ─────────────────────────────────────────────
 clean:
 	rm -f output/*.png output/*.html analysis/*.html
+	
+# ─────────────────────────────────────────────
+# Install rule for restoring renv environment
+# ─────────────────────────────────────────────
+install:
+	Rscript -e "renv::restore()"
+	
 
 .PHONY: all clean table figures 
